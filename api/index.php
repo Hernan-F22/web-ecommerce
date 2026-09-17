@@ -26,20 +26,48 @@ spl_autoload_register(function (string $class) {
 
     $relativeClass = substr($class, strlen($prefix));
 
-    // Map namespaces to folders
-    // App\Config\Database -> config/database.php
+    // Map namespaces to folders with case-insensitive fallback (for Linux/Vercel)
+    $candidates = [];
     if (str_starts_with($relativeClass, 'Config\\')) {
-        $file = $baseDir . 'config/' . str_replace('\\', '/', substr($relativeClass, 7)) . '.php';
+        $sub = substr($relativeClass, 7);
+        $norm = str_replace('\\', '/', $sub);
+        $candidates[] = $baseDir . 'config/' . $norm . '.php';
+        $candidates[] = $baseDir . 'config/' . strtolower($norm) . '.php';
+        $candidates[] = $baseDir . 'config/' . ucfirst($norm) . '.php';
     } else {
         // App\Controllers\... -> src/Controllers/...
-        // App\Models\... -> src/Models/...
+        // App\Models... -> src/Models/...
         // App\Utils\... -> src/Utils/...
-        $file = $baseDir . 'src/' . str_replace('\\', '/', $relativeClass) . '.php';
+        $norm = str_replace('\\', '/', $relativeClass);
+        $candidates[] = $baseDir . 'src/' . $norm . '.php';
+        $candidates[] = $baseDir . 'src/' . strtolower($norm) . '.php';
     }
 
-    if (file_exists($file)) {
-        require_once $file;
+    foreach ($candidates as $cand) {
+        if (file_exists($cand)) {
+            require_once $cand;
+            return;
+        }
     }
+});
+
+// Global exception handler to always return JSON on API routes
+set_exception_handler(function (\Throwable $e) {
+    $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+    if (str_starts_with($uri, '/api/')) {
+        if (!headers_sent()) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Server Error: ' . $e->getMessage()
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    http_response_code(500);
+    echo "<h1>500 Internal Server Error</h1><p>" . htmlspecialchars($e->getMessage()) . "</p>";
+    exit;
 });
 
 // Ensure session is active

@@ -122,9 +122,14 @@ $basePath = rtrim(str_ends_with($scriptDir, '/api') ? dirname($scriptDir) : $scr
             body: JSON.stringify(payload)
           });
 
-          const json = await res.json();
+          let json = null;
+          try {
+            json = await res.json();
+          } catch (e) {
+            // Non-JSON response (e.g. 500/502 error)
+          }
 
-          if (res.ok && json.status === 'success') {
+          if (json && res.ok && json.status === 'success') {
             alertBox.className = 'login-alert success';
             alertBox.textContent = 'Login berhasil! Mengalihkan...';
             alertBox.style.display = 'block';
@@ -134,14 +139,14 @@ $basePath = rtrim(str_ends_with($scriptDir, '/api') ? dirname($scriptDir) : $scr
             }, 500);
           } else {
             alertBox.className = 'login-alert error';
-            alertBox.textContent = json.message || 'Login gagal. Periksa kembali kredensial Anda.';
+            alertBox.textContent = (json && json.message) ? json.message : (res.status ? `Error ${res.status}: Gagal memproses login di server.` : 'Gagal menghubungi server.');
             alertBox.style.display = 'block';
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = '<span>Masuk ke Dashboard</span>';
           }
         } catch (err) {
           alertBox.className = 'login-alert error';
-          alertBox.textContent = 'Gagal menghubungi server.';
+          alertBox.textContent = 'Gagal menghubungi server. Pastikan koneksi internet Anda stabil.';
           alertBox.style.display = 'block';
           btnSubmit.disabled = false;
           btnSubmit.innerHTML = '<span>Masuk ke Dashboard</span>';

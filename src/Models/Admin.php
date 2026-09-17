@@ -34,10 +34,16 @@ class Admin
         $pdo = Database::getConnection();
 
         if ($pdo) {
-            $stmt = $pdo->prepare("SELECT id, name, email, password, role, created_at FROM admins WHERE email = :email LIMIT 1");
-            $stmt->execute([':email' => strtolower(trim($email))]);
-            $row = $stmt->fetch();
-            return $row ?: null;
+            try {
+                $stmt = $pdo->prepare("SELECT id, name, email, password, role, created_at FROM admins WHERE email = :email LIMIT 1");
+                $stmt->execute([':email' => strtolower(trim($email))]);
+                $row = $stmt->fetch();
+                if ($row) {
+                    return $row;
+                }
+            } catch (\PDOException $e) {
+                error_log("DB Query Error in findByEmail: " . $e->getMessage());
+            }
         }
 
         if (strcasecmp(self::$mockAdmin['email'], trim($email)) === 0) {
@@ -55,10 +61,16 @@ class Admin
         $pdo = Database::getConnection();
 
         if ($pdo) {
-            $stmt = $pdo->prepare("SELECT id, name, email, password, role, created_at FROM admins WHERE id = :id LIMIT 1");
-            $stmt->execute([':id' => $id]);
-            $row = $stmt->fetch();
-            return $row ?: null;
+            try {
+                $stmt = $pdo->prepare("SELECT id, name, email, password, role, created_at FROM admins WHERE id = :id LIMIT 1");
+                $stmt->execute([':id' => $id]);
+                $row = $stmt->fetch();
+                if ($row) {
+                    return $row;
+                }
+            } catch (\PDOException $e) {
+                error_log("DB Query Error in findById: " . $e->getMessage());
+            }
         }
 
         if (self::$mockAdmin['id'] === $id) {
@@ -76,11 +88,15 @@ class Admin
         $pdo = Database::getConnection();
 
         if ($pdo) {
-            $stmt = $pdo->prepare("UPDATE admins SET password = :pwd WHERE id = :id");
-            return $stmt->execute([
-                ':pwd' => $hashedPassword,
-                ':id'  => $id
-            ]);
+            try {
+                $stmt = $pdo->prepare("UPDATE admins SET password = :pwd WHERE id = :id");
+                return $stmt->execute([
+                    ':pwd' => $hashedPassword,
+                    ':id'  => $id
+                ]);
+            } catch (\PDOException $e) {
+                error_log("DB Query Error in updatePassword: " . $e->getMessage());
+            }
         }
 
         if (self::$mockAdmin['id'] === $id) {

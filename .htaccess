@@ -1,0 +1,26 @@
+# ==============================================================================
+# Apache Configuration for Local XAMPP Development
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    Options -Indexes
+
+    # Allow direct access to public assets
+    RewriteRule ^css/(.*)$ public/css/$1 [L]
+    RewriteRule ^js/(.*)$ public/js/$1 [L]
+    RewriteRule ^img/(.*)$ public/img/$1 [L]
+    RewriteRule ^favicon\.(ico|svg|png)$ public/$0 [L]
+    RewriteRule ^apple-touch-icon\.png$ public/img/apple-touch-icon.png [L]
+    RewriteRule ^public/(.*)$ public/$1 [L]
+
+    # Route all non-static traffic to api/index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^(.*)$ api/index.php [QSA,L]
+</IfModule>
+
+# Security: Deny access to sensitive files
+<FilesMatch "^\.env">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
